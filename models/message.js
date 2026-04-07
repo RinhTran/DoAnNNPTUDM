@@ -12,9 +12,7 @@ let messageContentSchema = new mongoose.Schema({
     type: String,
     required: true,
   }
-}, {
-  _id: false,
-});
+}, { _id: false });
 
 let messageSchema = new mongoose.Schema({
   fromUserId: {
@@ -40,10 +38,10 @@ let messageSchema = new mongoose.Schema({
 });
 
 messageSchema.set('toJSON', {
-  transform: function (doc, ret, options) {
-      ret.messageId = ret._id;
-      delete ret._id;
-      delete ret.__v;
+  transform: function (doc, ret) {
+    ret.messageId = ret._id;
+    delete ret._id;
+    delete ret.__v;
   }
 });
 
