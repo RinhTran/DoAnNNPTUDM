@@ -4,37 +4,36 @@ const crypto = require("crypto");
 
 mongoose.Promise = global.Promise;
 
-let userSchema = new mongoose.Schema(
-  {
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    utype:{
-        type: String,
-        default: "USR",
-    },
-    active: {
-      type: Boolean,
-      default: true
-    },
-    profile: {
-      type: Object,
-    },
-    token: { type: String },
+let userSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,
   },
-);
+  password: {
+    type: String,
+    required: true,
+  },
+  utype: {
+    type: String,
+    default: "USR",
+  },
+  active: {
+    type: Boolean,
+    default: true
+  },
+  profile: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Profile"
+  },
+  token: { type: String },
+});
 
 userSchema.set('toJSON', {
   transform: function (doc, ret, options) {
-      ret.userId = ret._id;
-      delete ret._id;
-      delete ret.__v;
+    ret.userId = ret._id;
+    delete ret._id;
+    delete ret.__v;
   }
 }); 
 
@@ -52,14 +51,13 @@ userSchema.methods.isPasswordMatched = async function (enteredPassword) {
 };
 
 userSchema.methods.createPasswordResetToken = async function () {
-  const resetToken= crypto.randomBytes(32).toString("hex");
+  const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
-  this.passwordResetExpires = Date.now() + 30 * 60 * 1000; // 10 minutes
+  this.passwordResetExpires = Date.now() + 30 * 60 * 1000;
   return resetToken;
 };
 
-//Export the model
 module.exports = mongoose.model("User", userSchema);
