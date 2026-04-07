@@ -10,22 +10,41 @@ const createMessage = asyncHandler(async (req, res) => {
     const toUserId = req.body.toUserId;
     validateMongoDbId(fromUserId);
     validateMongoDbId(toUserId);
+
     const findFromUser = await User.findById(fromUserId);
     const findToUser = await User.findById(toUserId);
     if (!findFromUser || !findToUser) {
-      return res.status(HttpStatusCode.NOT_FOUND).json({ success: false, status: 404, message: "user is not found", data: null });
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        success: false,
+        status: 404,
+        message: "user is not found",
+        data: null,
+      });
     }
+
     const newMessage = await Message.create({
-      fromUserId: fromUserId,
-      toUserId: toUserId,
+      fromUserId,
+      toUserId,
       messageContent: {
         type: req?.body?.type ?? "text",
         text: req?.body?.text,
-      }
+      },
     });
-    res.status(HttpStatusCode.OK).json({ success: true, status: 200, message: "Successfully", data: newMessage });
+ 
+
+    res.status(HttpStatusCode.OK).json({
+      success: true,
+      status: 200,
+      message: "Successfully",
+      data: newMessage,
+    });
   } catch (error) {
-    res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: error.message, data: null });
+    res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      status: 400,
+      message: error.message,
+      data: null,
+    });
   }
 });
 
@@ -35,15 +54,28 @@ const getMessagesByUsers = asyncHandler(async (req, res) => {
     const otherUserId = req.params.id;
     validateMongoDbId(userId);
     validateMongoDbId(otherUserId);
+
     const messages = await Message.find({
       $or: [
         { fromUserId: userId, toUserId: otherUserId },
         { fromUserId: otherUserId, toUserId: userId },
-      ]
-    }).sort({ createDate: -1 });
-    res.status(HttpStatusCode.OK).json({ success: true, status: 200, message: "Successfully", data: messages });
+      ],
+    }).sort({ createDate: 1 });
+
+    res.status(HttpStatusCode.OK).json({
+      success: true,
+      status: 200,
+      message: "Successfully",
+      currentUserId: userId, 
+      data: messages,
+    });
   } catch (error) {
-    res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: error.message, data: null });
+    res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      status: 400,
+      message: error.message,
+      data: null,
+    });
   }
 });
 
@@ -51,13 +83,15 @@ const getConversationList = asyncHandler(async (req, res) => {
   try {
     const userId = req.user?._id?.toString();
     validateMongoDbId(userId);
+
     const messages = await Message.find({
-      $or: [{ fromUserId: userId }, { toUserId: userId }]
+      $or: [{ fromUserId: userId }, { toUserId: userId }],
     }).sort({ createDate: -1 });
 
     const messageMap = new Map();
     messages.forEach((message) => {
-      const otherUserId = userId == message.fromUserId ? message.toUserId : message.fromUserId;
+      const otherUserId =
+        userId == message.fromUserId ? message.toUserId : message.fromUserId;
       if (!messageMap.has(otherUserId)) {
         messageMap.set(otherUserId, message);
       }
@@ -68,9 +102,19 @@ const getConversationList = asyncHandler(async (req, res) => {
       data.push({ userId: key, message: value });
     });
 
-    res.status(HttpStatusCode.OK).json({ success: true, status: 200, message: "Successfully", data: data });
+    res.status(HttpStatusCode.OK).json({
+      success: true,
+      status: 200,
+      message: "Successfully",
+      data,
+    });
   } catch (error) {
-    res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: error.message, data: null });
+    res.status(HttpStatusCode.BAD_REQUEST).json({
+      success: false,
+      status: 400,
+      message: error.message,
+      data: null,
+    });
   }
 });
 
