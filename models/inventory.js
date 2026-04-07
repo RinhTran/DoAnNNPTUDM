@@ -1,7 +1,5 @@
 const mongoose = require("mongoose");
 
-mongoose.Promise = global.Promise;
-
 let inventorySchema = new mongoose.Schema({
   productId: {
     type: String,
@@ -26,6 +24,10 @@ let inventorySchema = new mongoose.Schema({
   active: {
     type: Boolean,
     default: true,
+  },
+  sizeStock: {
+    type: Object,
+    default: {}
   },
   createDate: {
     type: Date,
