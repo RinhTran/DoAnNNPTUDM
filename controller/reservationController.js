@@ -1,11 +1,11 @@
 const Reservation = require("../models/reservation");
-const Product = require("../models/product");
-const Inventory = require("../models/inventory");
 const asyncHandler = require("express-async-handler");
 const HttpStatusCode = require("../config/HttpStatusCode");
 const validateMongoDbId = require("../utils/validateMongoDbId");
+const Product = require("../models/product");        
+const Inventory = require("../models/inventory");   
 
-const createReservation = asyncHandler(async (req, res) => {
+ const createReservation = asyncHandler(async (req, res) => {
   try {
     const body = req.body;
     const items = body.items || [];
@@ -17,12 +17,14 @@ const createReservation = asyncHandler(async (req, res) => {
       validateMongoDbId(item.productId);
       const product = await Product.findById(item.productId);
       const inventory = await Inventory.findOne({ productId: item.productId });
+
       if (!product || !inventory) {
         return res.status(HttpStatusCode.NOT_FOUND).json({ success: false, status: 404, message: "product is not found", data: null });
       }
       if (inventory.stock < Number(item.quantity || 0)) {
         return res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: `quantity in stock is not enough for ${product.name}`, data: null });
       }
+
       item.name = item.name || product.name;
       item.price = item.price ?? product.price;
       item.imageUrl = item.imageUrl || product.image;
@@ -35,6 +37,7 @@ const createReservation = asyncHandler(async (req, res) => {
       inventory.stock -= Number(item.quantity || 0);
       inventory.reserved += Number(item.quantity || 0);
       await inventory.save();
+
       const product = await Product.findById(item.productId);
       if (product) {
         product.stock = inventory.stock;
@@ -47,17 +50,40 @@ const createReservation = asyncHandler(async (req, res) => {
     res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: error.message, data: null });
   }
 });
-
 const getAllReservations = asyncHandler(async (req, res) => {
-  const reservations = await Reservation.find();
-  res.status(HttpStatusCode.OK).json({ success: true, status: 200, message: "Successfully", data: reservations });
+  const reservations = await Reservation.find()
+    .populate({
+      path: "userId",
+      select: "email utype",
+      populate: {
+        path: "profile",
+        select: "firstName lastName phone address"
+      }
+    })
+    .sort({ createDate: -1 });
+
+  res.status(HttpStatusCode.OK).json({ 
+    success: true, 
+    status: 200, 
+    message: "Successfully", 
+    data: reservations 
+  });
 });
 
-const getReservationDetails = asyncHandler(async (req, res) => {
+ const getReservationDetails = asyncHandler(async (req, res) => {
   try {
     const id = req.params.id;
     validateMongoDbId(id);
-    const reservation = await Reservation.findById(id);
+    const reservation = await Reservation.findById(id)
+      .populate({
+        path: "userId",
+        select: "email utype",
+        populate: {
+          path: "profile",
+          select: "firstName lastName phone address"
+        }
+      });
+
     if (reservation) {
       return res.status(HttpStatusCode.OK).json({ success: true, status: 200, message: "Successfully", data: reservation });
     }
@@ -66,7 +92,6 @@ const getReservationDetails = asyncHandler(async (req, res) => {
     res.status(HttpStatusCode.BAD_REQUEST).json({ success: false, status: 400, message: error.message, data: null });
   }
 });
-
 const getReservationsByUserId = asyncHandler(async (req, res) => {
   try {
     const userId = req.params.id;
@@ -150,4 +175,12 @@ const transferReservation = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { createReservation, getAllReservations, getReservationDetails, getReservationsByUserId, updateReservation, cancelReservation, transferReservation };
+module.exports = { 
+  createReservation, 
+  getAllReservations, 
+  getReservationDetails, 
+  getReservationsByUserId, 
+  updateReservation, 
+  cancelReservation, 
+  transferReservation 
+};

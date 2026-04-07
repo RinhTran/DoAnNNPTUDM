@@ -40,7 +40,8 @@ let itemReservationSchema = new mongoose.Schema({
 
 let reservationSchema = new mongoose.Schema({
   userId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   items: {
@@ -77,9 +78,9 @@ let reservationSchema = new mongoose.Schema({
 
 reservationSchema.set('toJSON', {
   transform: function (doc, ret, options) {
-      ret.reservationId = ret._id;
-      delete ret._id;
-      delete ret.__v;
+    ret.reservationId = ret._id;
+    delete ret._id;
+    delete ret.__v;
   }
 });
 
@@ -94,6 +95,7 @@ reservationSchema.pre("save", function (next) {
   }
 
   this.amount = this.amount - Number(this.promotion || 0);
+
   if (!this.expiredIn && this.status === "actived") {
     const exp = new Date();
     exp.setMinutes(exp.getMinutes() + 30);
