@@ -271,7 +271,8 @@ const createMomoPayment = asyncHandler(async (req, res) => {
 
     const requestId = `RE${Date.now()}`;
     const momoOrderId = `OD${Date.now()}`;
-    const requestType = "payWithCC";
+const requestType = "payWithMethod";
+
 
     const finalOrderInfo = orderInfo || `Thanh toan don hang ${orderId}`;
     const finalRedirectUrl = MOMO_REDIRECT_URL;
